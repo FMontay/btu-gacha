@@ -7,6 +7,7 @@ from collections import Counter
 
 from gacha.pull import *
 from gacha.cards import cards_id
+from save import *
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
@@ -78,6 +79,8 @@ async def add(ctx, id_card:str, user:discord.Member, amount:int):
     for _ in range(amount):
         user_binder[user_id].append((id_card, card_info['name'], tier))
 
+    save_binder()
+
     await ctx.send(f"Successfully added {amount}x '{card_info['name']}' (ID {id_card}).")
 
     if id_card == '01':
@@ -112,9 +115,11 @@ async def delete(ctx, id_card:str, user:discord.Member, amount:int):
         new_binder.append(card)
     user_binder[user_id] = new_binder
 
+    save_binder()
+
     await ctx.send(f"Successfully deleted {amount} card(s) with ID {id_card} from {user.mention}'s binder.")
 
-
+    
 @bot.command()
 @commands.has_role(secret_role)
 async def empty(ctx, user:discord.Member):
@@ -124,9 +129,11 @@ async def empty(ctx, user:discord.Member):
 
     if binder:
         user_binder[user_id] = []
+        save_binder()
         await ctx.send(f"Successfully cleared {user.mention}'s binder.")
     else:
-        await ctx.send(f"The binder is already empty.")
+        await ctx.send(f"The binder is already empty.")   
+
 
 @bot.command()
 async def pull(ctx): #besoin d'ajouter la limite journalière plus tard.
@@ -139,6 +146,8 @@ async def pull(ctx): #besoin d'ajouter la limite journalière plus tard.
         user_binder[user_id] = []
 
     user_binder[user_id].append((card_id, card['name'], tier))
+    save_binder()
+
     pictures_path = card['image']
 
     if os.path.exists(pictures_path):
