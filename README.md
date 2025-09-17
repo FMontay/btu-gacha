@@ -27,6 +27,7 @@ With BTU Gacha, you can:
 #### Available items:
 
 - **pity-pull** -> Additional pull obtained after 10 duplicates. Can be used after reaching daily limit. Higher chance of getting higher rarity cards, based on the duplicates' rarity.
+
 Example: "John obtained 11 duplicates of a D Tier character. 10 of those cards may be turned into a pity-pull, which guarantees John much higher chances of pulling for a C Tier & higher character, while the chances of pulling for a D Tier & lower are much lower."
 
 
@@ -42,4 +43,5 @@ The higher rarities may contain alternative arts of lower rarities.
 #### Future additional gimics:
 
 - Knowledge quiz on the books and the characters
+
 
