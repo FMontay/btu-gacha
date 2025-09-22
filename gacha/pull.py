@@ -14,15 +14,15 @@ pull_rates = {
     "E":0.3989
 }
 
-def tier_selector(): #conversion en liste car 'random' a besoin de listes
+def tier_selector(): #convertion to list because 'random' needs lists
     tiers = list(pull_rates.keys())
     weights = list(pull_rates.values())
     return random.choices(tiers, weights=weights, k=1)[0]
 
 
 def pull_card():
-    tier = tier_selector() #choisit un tier au hasard selon les probabilités
-    cards = cards_id[tier] #dans le tier obtenu, regarde toutes les cartes
-    card_id = random.choice(list(cards.keys())) #choisit au hasard l'ID d'une carte
-    card = cards[card_id] #récupère les données de l'ID de la carte choisit
-    return tier, card_id, card #redonne le tier & la carte
+    tier = tier_selector() #chooses a random tier based on probabilities
+    cards = cards_id[tier] #in the obtained tier, looks through the tier's cards
+    card_id = random.choice(list(cards.keys())) #randomly chooses a card id
+    card = cards[card_id] #gathers the card id's data
+    return tier, card_id, card #returns the tier and the card id
