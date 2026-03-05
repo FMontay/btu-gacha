@@ -40,10 +40,15 @@ bot.remove_command('help') #removed 'help' for my own customised "help" command
 secret_role = "God"
 
 
+@bot.event
+async def on_command_error(ctx, error):
+    await ctx.send(f"Error: {error}")
+
 #Start the bot
 @bot.event
 async def on_ready():
     print(f"{bot.user.name} online. Let's go.")
+
 
 
 
@@ -211,6 +216,7 @@ async def binder(ctx): #Check if unique to each user. Need to add a saving syste
         await ctx.send("Your binder is empty, peasant.")
         return
     
+    collection = ""
     for (card_id, card_name, card_tier, amount) in rows:
         collection += f"{card_id}   {card_name}   {card_tier}   {amount}\n"
 

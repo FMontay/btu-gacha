@@ -45,7 +45,7 @@ def get_user_binder(user_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT card_id, card_name, card_tier, card_description, quantity FROM binder WHERE user_id = ? ORDER BY card_tier", (str(user_id),))
+    cursor.execute("SELECT card_id, card_name, card_tier, quantity FROM binder WHERE user_id = ? ORDER BY card_tier", (str(user_id),))
 
     rows = cursor.fetchall()
     conn.close()

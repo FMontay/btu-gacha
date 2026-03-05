@@ -1,10 +1,11 @@
 import sqlite3
+from pathlib import Path
 
-
-DB_PATH = "btu-gacha/btu_gacha.db"
+ROOT_DIR = Path(__file__).parent.parent
+DB_PATH = ROOT_DIR / "btu_gacha.db"
 
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    return sqlite3.connect(str(DB_PATH))
 
 def initialize():
     conn = get_connection()
