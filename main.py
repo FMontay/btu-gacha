@@ -6,15 +6,24 @@ from dotenv import load_dotenv
 import os
 from collections import Counter
 
+#Import db functions
+from database.db import initialize
+from database.binder import get_user_binder, add_card, remove_card, clear_binder
+
 #Import the functions and cards for the main discord commands
 from gacha.pull import *
 from gacha.cards import cards_id
-from save import *
 
+initialize()
+
+
+#Starting up Discord Bot
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
 
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+#Create log folder if it doesn't already exist and set up log file name
+os.makedirs('logs', exist_ok=True)
+handler = logging.FileHandler(filename='logs/discord.log', encoding='utf-8', mode='w')
 
 #choice of intents for the bot -- its authorisations. Should sync with Discord Dev choices
 intents = discord.Intents.default()
@@ -27,22 +36,21 @@ bot.remove_command('help') #removed 'help' for my own customised "help" command
 
 
 #Variables to define
-
 #Role for specific debug commands
 secret_role = "God"
 
-#Binder unique to each user
-user_binder = {}
 
 #Start the bot
 @bot.event
 async def on_ready():
     print(f"{bot.user.name} online. Let's go.")
 
+
+
 #Check for available commands
 @bot.command()
 async def help(ctx):
-    """You're literally using it, but idk how to remove it from the list.""" #still working on it!
+    """You're literally using it dumbass, but idk how to remove it from the list.""" 
     embed = discord.Embed(
         title="List of commands",
         color=discord.Colour.blue()
@@ -58,9 +66,11 @@ async def help(ctx):
     await ctx.send(embed=embed)
 
 
+
+
 #If Admin role (God), can do the following commands
 
-#Add card.s to X user's binder
+# Add card.s to X user's binder
 @bot.command()
 @commands.has_role(secret_role)
 async def add(ctx, id_card:str, user:discord.Member, amount:int):
@@ -80,22 +90,16 @@ async def add(ctx, id_card:str, user:discord.Member, amount:int):
         return
 
     user_id = user.id
-    if user_id not in user_binder:
-        user_binder[user_id] = []
 
-    for _ in range(amount):
-        user_binder[user_id].append((id_card, card_info['name'], tier))
-
-    save_binder() #doesn't work yet, but should be placed here
-
+    add_card(user_id, id_card, card_info['name'], tier, card_info['info'], amount)
     await ctx.send(f"Successfully added {amount}x '{card_info['name']}' (ID {id_card}).")
 
-    #this is for a specific meme card, which is extremely, almost impossible to get
+    #FOR TESTING PURPOSES
     if id_card == '01':
         await ctx.send(f"@everyone {user.mention} RELEASED THE GOBLIN FROM ITS JAIL!!!!")
 
     
-#Delete X user's card.s
+# Delete X user's card.s
 @bot.command()
 @commands.has_role(secret_role)
 async def delete(ctx, id_card:str, user:discord.Member, amount:int):
@@ -103,32 +107,22 @@ async def delete(ctx, id_card:str, user:discord.Member, amount:int):
     
     #get user id & binder
     user_id = user.id
-    binder = user_binder.get(user_id,[])
+    rows = get_user_binder(user_id)
 
     #check if card exists in the binder
-    matching = [card for card in binder if card[0]==id_card]
+    matching = [r for r in rows if r[0]==id_card]
     if not matching:
         await ctx.send(f"No card with ID '{id_card}' found in {user.mention}'s binder.")            
         return
     
     #check if the amount you want to delete is superior to the maximum amount the user has
-    if amount > len(matching):
-        await ctx.send(f"{user.mention} only has {len(matching)} cards. Please write a valid number.")
+    if amount > matching[0][3]:
+        await ctx.send(f"{user.mention} only has {matching[0][3]} cards. Please write a valid number.")
         return
     
-    removed = 0
-    new_binder = []
-    for card in binder:
-        if card[0] == id_card and removed < amount:
-            removed += 1
-            continue
-        
-        new_binder.append(card)
-    user_binder[user_id] = new_binder
-
-    save_binder()
-
+    remove_card(user_id, id_card, amount)
     await ctx.send(f"Successfully deleted {amount} card(s) with ID {id_card} from {user.mention}'s binder.")
+
 
 #Empty X user's binder
 @bot.command()
@@ -136,18 +130,21 @@ async def delete(ctx, id_card:str, user:discord.Member, amount:int):
 async def empty(ctx, user:discord.Member):
     """!empty <@username> -- deletes every card in X user's binder."""
     user_id = user.id
-    binder = user_binder.get(user_id,[])
+    rows = get_user_binder(user_id)
 
-    if binder:
-        user_binder[user_id] = [] #cleared the cards
-        save_binder() #doesn't work yet but should be placed here
-        await ctx.send(f"Successfully cleared {user.mention}'s binder.")
+    if not rows:
+        await ctx.send(f"The binder is already empty.")  
     else:
-        await ctx.send(f"The binder is already empty.")   
+        clear_binder(user_id)
+        await ctx.send(f"Successfully cleared {user.mention}'s binder.")
+
+
+
+
 
 #Normal commands
 
-#Get a random card based on its rarity. The limit isn't added yet
+#Get a random card based on its rarity. The limit isn't added yet.
 @bot.command()
 async def pull(ctx): #Need to add daily limit
     """Pull a card. Limited to 5 per day."""  
@@ -156,11 +153,7 @@ async def pull(ctx): #Need to add daily limit
     tier, card_id, card = pull_card()
     user_id = ctx.author.id
 
-    if user_id not in user_binder:
-        user_binder[user_id] = []
-
-    user_binder[user_id].append((card_id, card['name'], tier))
-    save_binder()
+    add_card(user_id, card_id, card['name'], tier, card['info'])
 
     pictures_path = card['image']
 
@@ -206,27 +199,24 @@ async def pull(ctx): #Need to add daily limit
     else:
         await ctx.send(f"Error : Image file not found for '{card['name']}'.")
 
+
 #Check cards obtained in binder
 @bot.command()
 async def binder(ctx): #Check if unique to each user. Need to add a saving system when the bot disconnects.
     """Check out your collection of cards."""
     user_id = ctx.author.id
-    binder = user_binder.get(user_id, [])
+    rows = get_user_binder(user_id)
 
-    if not binder: #if binder is False / empty
-        await ctx.send("Your binder is empty, stupid") #sorry, this bot is mainly for use between my boyfriend and me
+    if not rows: #if binder is False / empty
+        await ctx.send("Your binder is empty, peasant.")
         return
-
-    counter = Counter(binder) #counts occurences
-    sorted_cards = sorted(counter.items(), key=lambda x: x[0][0])
-
-    collection = ""
-    for (id_card, card_name, card_tier), amount in sorted_cards:
-        collection += f"{id_card}   {card_name}   {card_tier}   {amount}\n"
+    
+    for (card_id, card_name, card_tier, amount) in rows:
+        collection += f"{card_id}   {card_name}   {card_tier}   {amount}\n"
 
     embed = discord.Embed(
         title="BTU Cards Collection",
-        description=collection
+        description=collection #displays only card id, card name, card tier and amount for ergonomic purposes
     )
 
     await ctx.send(embed=embed)

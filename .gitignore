@@ -1,2 +1,5 @@
 *.log
 .env
+*.sql
+btu-gacha\btuvenv
+__pycache__
