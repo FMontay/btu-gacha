@@ -3,4 +3,4 @@
 *.sql
 btu-gacha\btuvenv
 __pycache__
-*.db
+btu_gacha.db
