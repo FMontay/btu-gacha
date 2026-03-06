@@ -8,7 +8,7 @@ from collections import Counter
 
 #Import db functions
 from database.db import initialize
-from database.binder import get_user_binder, add_card, remove_card, clear_binder
+from database.binder import get_user_binder, get_user_card, add_card, remove_card, clear_binder
 
 #Import the functions and cards for the main discord commands
 from gacha.pull import *
@@ -205,7 +205,7 @@ async def pull(ctx): #Need to add daily limit
 
 #Check cards obtained in binder
 @bot.command()
-async def binder(ctx): #Check if unique to each user. Need to add a saving system when the bot disconnects.
+async def binder(ctx):
     """Check out your collection of cards."""
     user_id = ctx.author.id
     rows = get_user_binder(user_id)
@@ -224,6 +224,42 @@ async def binder(ctx): #Check if unique to each user. Need to add a saving syste
     )
 
     await ctx.send(embed=embed)
+
+
+
+#Check specific card info
+@bot.command()
+async def info(ctx, id_card:str):
+    """Check a card's info : name, tier, description, id"""
+    user_id = ctx.author.id
+    card = get_user_card(user_id, id_card)
+    
+    if not card:
+        await ctx.send("You don't own that card")
+        return
+    
+    card_id, card_name, card_tier, card_description = card
+    
+    url = None
+    for tier, cards in cards_id.items():
+        if id_card in cards:
+            url = cards[id_card]['image']
+            break
+    
+    if not url:
+        await ctx.send("Card data not found. Did you try write the right ID (01-70) ?")
+        return
+    
+    embed = discord.Embed(
+            title=f"{card_name} [{card_tier}]",
+            description=card_description,
+            color=discord.Color.gold()
+        )
+    
+    embed.set_footer(text=f"ID: {card_id}")
+    embed.set_image(url=url)
+    await ctx.send(embed=embed)
+    
 
 
 

@@ -61,3 +61,15 @@ def clear_binder(user_id):
 
     conn.commit()
     conn.close()
+
+
+# select card info (everything but description)
+def get_user_card(user_id, card_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT card_id, card_name, card_tier, card_description FROM binder WHERE user_id = ? AND card_id = ?", (str(user_id), card_id,))
+
+    row = cursor.fetchone()
+    conn.close()
+    return row # list of (card_id, card_name, card_tier, description)
