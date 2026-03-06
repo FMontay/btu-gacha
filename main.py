@@ -163,8 +163,7 @@ async def pull(ctx): #Need to add daily limit
     pictures_path = card['image']
 
     #The pictures are temporarily local. I need to upload them to the web once I want to permanently host the bot. This is just for testing
-    if os.path.exists(pictures_path):
-        file = discord.File(pictures_path, filename="image.png")
+    if pictures_path.startswith("http"):
 
         if tier in ['E']:
             color=discord.Color.dark_blue()
@@ -190,8 +189,8 @@ async def pull(ctx): #Need to add daily limit
             description=card['info'],
             color=color
         )
-        embed.set_image(url="attachment://image.png")
-        await ctx.send(file=file, embed=embed)
+        embed.set_image(url=pictures_path)
+        await ctx.send(embed=embed)
 
         if tier in ['S','SS','CURSED']:
             await ctx.send(f"Congratulations ! You pulled a very rare card!")
@@ -200,7 +199,6 @@ async def pull(ctx): #Need to add daily limit
         else:
             pass
 
-    #only happens if internal error within my local files
     else:
         await ctx.send(f"Error : Image file not found for '{card['name']}'.")
 
