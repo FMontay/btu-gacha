@@ -32,6 +32,14 @@ def initialize():
             PRIMARY KEY (user_id, item_id)
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS daily_pulls (
+                   user_id INTEGER PRIMARY KEY,
+                   pull_count INTEGER DEFAULT 0,
+                   last_reset TEXT
+        )
+    """)
     conn.commit()
     conn.close()
     print("Database initialized.")

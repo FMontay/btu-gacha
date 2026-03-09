@@ -4,11 +4,12 @@ from discord.ext import commands
 import logging 
 from dotenv import load_dotenv
 import os
-from collections import Counter
+from datetime import datetime, timedelta, timezone
 
 #Import db functions
 from database.db import initialize
 from database.binder import get_user_binder, get_user_card, add_card, remove_card, clear_binder
+from database.pulls import get_pull_data, update_pull_count
 
 #Import the functions and cards for the main discord commands
 from gacha.pull import *
@@ -38,6 +39,8 @@ bot.remove_command('help') #removed 'help' for my own customised "help" command
 #Variables to define
 #Role for specific debug commands
 secret_role = "God"
+
+DAILY_PULL_LIMIT = 3
 
 
 @bot.event
@@ -141,18 +144,13 @@ async def empty(ctx, user:discord.Member):
         await ctx.send(f"The binder is already empty.")  
     else:
         clear_binder(user_id)
-        await ctx.send(f"Successfully cleared {user.mention}'s binder.")
+        await ctx.send(f"Successfully turned {user.mention}'s binder to dust.")
 
 
-
-
-
-#Normal commands
-
-#Get a random card based on its rarity. The limit isn't added yet.
 @bot.command()
-async def pull(ctx): #Need to add daily limit
-    """Pull a card. Limited to 5 per day."""  
+@commands.has_role(secret_role)
+async def devpull(ctx): 
+    """Pull a card. No limit. For test pulling and avoid being restrained by limited pull in case of glitch."""  
 
     #uses the functions and variable imported from gacha.pull & gacha.cards
     tier, card_id, card = pull_card()
@@ -198,9 +196,101 @@ async def pull(ctx): #Need to add daily limit
             await ctx.send(f"@everyone {ctx.author.mention} RELEASED THE GOBLIN FROM ITS JAIL!!!!")
         else:
             pass
+        
 
     else:
         await ctx.send(f"Error : Image file not found for '{card['name']}'.")
+
+
+
+
+#Normal commands
+
+#Get a random card based on its rarity. Limited to 3 pulls.
+@bot.command()
+async def pull(ctx):
+    """Pull a card. Limited to 3 per day."""  
+    user_id = ctx.author.id
+
+
+    #before pulling, check if limit is reached or not. If not, update it. If yes, show time until next available reset.
+    now = datetime.now(timezone.utc) 
+
+    row = get_pull_data(user_id)
+
+    if row:
+        pull_count, last_reset_str = row #decomposition of row from table
+        last_reset = datetime.fromisoformat(last_reset_str).replace(tzinfo=timezone.utc)
+
+        # If 24 hours have passed, reset the counter
+        if now - last_reset >= timedelta(hours=24):
+            pull_count = 0
+            last_reset = now
+        
+        else:
+            # First time this user pulls
+            pull_count = 0
+            last_reset = now
+    
+    if pull_count >= DAILY_PULL_LIMIT:
+        time_remaining = (last_reset + timedelta(hours=24)) - now
+        hours, remainder = divmod(int(time_remaining.total_seconds()), 3600)
+        minutes = remainder // 60
+        await ctx.send(f"Sorry sexy, you've reached your daily pull limit. Come back in {hours}h {minutes} minutes.")
+        return
+    
+    # Increment and save before pulling
+    update_pull_count(user_id, pull_count + 1, last_reset.isoformat())
+
+
+
+    #uses the functions and variable imported from gacha.pull & gacha.cards
+    tier, card_id, card = pull_card()
+    
+    add_card(user_id, card_id, card['name'], tier, card['info'])
+
+    pictures_path = card['image']
+
+    #The pictures are temporarily local. I need to upload them to the web once I want to permanently host the bot. This is just for testing
+    if pictures_path.startswith("http"):
+
+        if tier in ['E']:
+            color=discord.Color.dark_blue()
+        elif tier in ['D']:
+            color=discord.Color.green()
+        elif tier in ['C']:
+            color=discord.Color.orange()
+        elif tier in ['B']:
+            color=discord.Color.blue()
+        elif tier in ['A']:
+            color=discord.Color.red()
+        elif tier in ['S']:
+            color=discord.Color.pink()
+        elif tier in ['SS']:
+            color=discord.Color.purple()
+        elif tier in ['CURSED']:
+            color=discord.Color.light_grey()
+        else:
+            color=discord.Color.gold()
+
+        embed = discord.Embed(
+            title=f"{card['name']} [{tier}]",
+            description=card['info'],
+            color=color
+        )
+        embed.set_image(url=pictures_path)
+        await ctx.send(embed=embed)
+
+        if tier in ['S','SS','CURSED']:
+            await ctx.send(f"Congratulations ! You pulled a very rare card!")
+        elif tier in ['GOBLIN']:
+            await ctx.send(f"@everyone {ctx.author.mention} RELEASED THE GOBLIN FROM ITS JAIL!!!!")
+        else:
+            pass
+
+
+    else:
+        await ctx.send(f"Error : Image file not found for '{card['name']}' :(")
 
 
 #Check cards obtained in binder
@@ -232,13 +322,6 @@ async def binder(ctx):
 async def info(ctx, id_card:str):
     """Check a card's info : name, tier, description, id"""
     user_id = ctx.author.id
-    card = get_user_card(user_id, id_card)
-    
-    if not card:
-        await ctx.send("You don't own that card")
-        return
-    
-    card_id, card_name, card_tier, card_description = card
     
     url = None
     for tier, cards in cards_id.items():
@@ -247,8 +330,18 @@ async def info(ctx, id_card:str):
             break
     
     if not url:
-        await ctx.send("Card data not found. Did you try write the right ID (01-70) ?")
+        await ctx.send("Card data not found. Did you write the right ID (01-70) ?")
         return
+    
+
+    card = get_user_card(user_id, id_card)
+
+    if not card:
+        await ctx.send("You don't own that card.")
+        return
+    
+    card_id, card_name, card_tier, card_description = card
+    
     
     embed = discord.Embed(
             title=f"{card_name} [{card_tier}]",
@@ -260,6 +353,38 @@ async def info(ctx, id_card:str):
     embed.set_image(url=url)
     await ctx.send(embed=embed)
     
+
+#Check remaining time until next available pulls
+@bot.command()
+async def check(ctx):
+    user_id = ctx.author.id
+    now = datetime.now(timezone.utc) 
+
+    row = get_pull_data(user_id)
+
+    if row is None:
+        await ctx.send(f"Your pulls are fresh and ready! You have {DAILY_PULL_LIMIT} pulls remaining.")
+        return
+
+    else:
+        pull_count, last_reset_str = row #decomposition of row from table
+        last_reset = datetime.fromisoformat(last_reset_str).replace(tzinfo=timezone.utc)
+
+        if now - last_reset >= timedelta(hours=24):
+            await ctx.send(f"Your pulls are fresh and ready! You have {DAILY_PULL_LIMIT} pulls remaining.")
+            return
+        
+        elif pull_count >= DAILY_PULL_LIMIT:
+            time_remaining = (last_reset + timedelta(hours=24)) - now
+            hours, remainder = divmod(int(time_remaining.total_seconds()), 3600)
+            minutes = remainder // 60
+            await ctx.send(f"The pulls reset in {hours}h {minutes} minutes.")
+            return
+
+        else:
+            await ctx.send(f"You still got a couple pulls ! You have {DAILY_PULL_LIMIT - pull_count} pulls remaining.")
+            return
+        
 
 
 
