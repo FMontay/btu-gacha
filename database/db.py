@@ -22,22 +22,21 @@ def initialize():
         )
     """)
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS inventory (
-            user_id INTEGER,
-            item_id TEXT,
-            item_name TEXT,
-            item_description TEXT,
-            quantity INTEGER DEFAULT 1,
-            PRIMARY KEY (user_id, item_id)
-        )
-    """)
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS daily_pulls (
                    user_id INTEGER PRIMARY KEY,
                    pull_count INTEGER DEFAULT 0,
                    last_reset TEXT
+        )
+    """)
+
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS converted_pulls (
+                   user_id INTEGER PRIMARY KEY,
+                   pull_tier TEXT,
+                   quantity INTEGER DEFAULT 1
         )
     """)
     conn.commit()

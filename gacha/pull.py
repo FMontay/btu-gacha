@@ -1,6 +1,8 @@
 import random
 from .cards import cards_id
 
+TIER_ORDER = ["E", "D", "C", "B", "A", "S", "SS", "CURSED", "GOBLIN"]
+
 #Pull rates for the tiers of the cards
 pull_rates = {
     "GOBLIN":0.0001,
@@ -26,3 +28,21 @@ def pull_card():
     card_id = random.choice(list(cards.keys())) #randomly chooses a card id
     card = cards[card_id] #gathers the card id's data
     return tier, card_id, card #returns the tier and the card id
+
+
+def new_rates(tier):
+    # Find the index of the converted tier
+    tier_index = TIER_ORDER.index(str)
+
+    # Keep only tiers strictly above the converted tier
+    eligible_tiers = TIER_ORDER[tier_index + 1:]
+
+    # Get their original rates
+    eligible_rates = {t: pull_rates[t] for t in eligible_tiers}
+
+    # Normalize so the rates add up to 1.0
+    total = sum(eligible_rates.values())
+    normalized = {t: round(rate/total, 4) for t, rate in eligible_rates.items()}
+
+    return normalized
+

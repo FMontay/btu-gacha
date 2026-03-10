@@ -23,12 +23,3 @@ def update_pull_count(user_id, new_count, reset_time):
 """, (str(user_id), new_count, reset_time, new_count, reset_time))
     conn.commit()
     conn.close()
-
-
-def check_time(user_id):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT last_reset FROM daily_pulls WHERE user_id = ?", (str(user_id),))
-
-    conn.close()

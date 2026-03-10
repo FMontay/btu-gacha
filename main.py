@@ -287,7 +287,6 @@ async def pull(ctx):
     update_pull_count(user_id, pull_count + 1, last_reset.isoformat())
 
 
-
     #uses the functions and variable imported from gacha.pull & gacha.cards
     tier, card_id, card = pull_card()
     
@@ -430,6 +429,15 @@ async def check(ctx):
             await ctx.send(f"You still got a couple pulls ! You have {DAILY_PULL_LIMIT - pull_count} pulls remaining.")
             return
         
+
+#Check remaining time until next available pulls
+@bot.command()
+async def convert(ctx, card_id):
+    user_id = ctx.author.id
+    
+    
+
+
 
 
 
