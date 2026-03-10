@@ -53,9 +53,29 @@ async def on_ready():
     print(f"{bot.user.name} online. Let's go.")
 
 
+#Check for EVERY available command (includes admin commands)
+@bot.command()
+@commands.has_role(secret_role)
+async def devhelp(ctx):
+    """Shows ALL the commands. For users with 'God' role.""" 
+
+    embed = discord.Embed(
+        title="List of every available command",
+        color=discord.Colour.red()
+    )
+    for cmd in bot.commands:
+        is_admin = any(getattr(check, "__qualname__", "").startswith("has_role") for check in cmd.checks)
+        label = f"!{cmd} 👑" if is_admin else f"!{cmd}"
+        embed.add_field(
+            name=label,
+            value=cmd.help or "You forgot to include a description stupid bitch",
+            inline=False
+        )
+    await ctx.send(embed=embed)
 
 
-#Check for available commands
+
+#Check for available commands (no admin commands)
 @bot.command()
 async def help(ctx):
     """You're literally using it dumbass, but idk how to remove it from the list.""" 
@@ -147,10 +167,11 @@ async def empty(ctx, user:discord.Member):
         await ctx.send(f"Successfully turned {user.mention}'s binder to dust.")
 
 
+# Admin command to use the pull comand without being restrained by daily limit
 @bot.command()
 @commands.has_role(secret_role)
 async def devpull(ctx): 
-    """Pull a card. No limit. For test pulling and avoid being restrained by limited pull in case of glitch."""  
+    """!devpull -- Pull a card. No limit. For test pulling and avoid being restrained by limited pull in case of glitch."""  
 
     #uses the functions and variable imported from gacha.pull & gacha.cards
     tier, card_id, card = pull_card()
@@ -203,15 +224,38 @@ async def devpull(ctx):
 
 
 
+# Reset daily limit for X user
+@bot.command()
+@commands.has_role(secret_role)
+async def reset(ctx, user:discord.Member): 
+    """!reset <@username> -- Reset X user's daily limit (time limit and pull count)."""
+    user_id = user.id
+    row = get_pull_data(user_id)
+    now = datetime.now(timezone.utc)
+
+    if row:
+        pull_count, last_reset_str = row
+        last_reset = datetime.fromisoformat(last_reset_str).replace(tzinfo=timezone.utc)
+
+        pull_count = 0
+        last_reset = now - timedelta(hours=24) #reset time limit by going 24 hours into the past
+
+    else:
+        await ctx.send(f"{user.mention} hasn't pulled anything yet.")
+        return
+
+    update_pull_count(user_id, pull_count, last_reset.isoformat())
+
+    await ctx.send(f"Daily limit successfully reset for {user.mention} !")
+
 
 #Normal commands
 
 #Get a random card based on its rarity. Limited to 3 pulls.
 @bot.command()
 async def pull(ctx):
-    """Pull a card. Limited to 3 per day."""  
+    """!pull -- Pull a card. Limited to 3 per day in a 24h window."""  
     user_id = ctx.author.id
-
 
     #before pulling, check if limit is reached or not. If not, update it. If yes, show time until next available reset.
     now = datetime.now(timezone.utc) 
@@ -227,10 +271,10 @@ async def pull(ctx):
             pull_count = 0
             last_reset = now
         
-        else:
-            # First time this user pulls
-            pull_count = 0
-            last_reset = now
+    else:
+        # First time this user pulls
+        pull_count = 0
+        last_reset = now
     
     if pull_count >= DAILY_PULL_LIMIT:
         time_remaining = (last_reset + timedelta(hours=24)) - now
@@ -296,7 +340,7 @@ async def pull(ctx):
 #Check cards obtained in binder
 @bot.command()
 async def binder(ctx):
-    """Check out your collection of cards."""
+    """!binder -- Check out your collection of cards."""
     user_id = ctx.author.id
     rows = get_user_binder(user_id)
 
@@ -320,7 +364,7 @@ async def binder(ctx):
 #Check specific card info
 @bot.command()
 async def info(ctx, id_card:str):
-    """Check a card's info : name, tier, description, id"""
+    """!info <card_id> -- Check a card's info : name, tier, description, id (01-70)"""
     user_id = ctx.author.id
     
     url = None
@@ -357,6 +401,7 @@ async def info(ctx, id_card:str):
 #Check remaining time until next available pulls
 @bot.command()
 async def check(ctx):
+    """!check -- Check the remaining pulls you have, or time limit until daily limit reset."""
     user_id = ctx.author.id
     now = datetime.now(timezone.utc) 
 
@@ -378,7 +423,7 @@ async def check(ctx):
             time_remaining = (last_reset + timedelta(hours=24)) - now
             hours, remainder = divmod(int(time_remaining.total_seconds()), 3600)
             minutes = remainder // 60
-            await ctx.send(f"The pulls reset in {hours}h {minutes} minutes.")
+            await ctx.send(f"Your pulls reset in {hours}h{minutes} minutes.")
             return
 
         else:
