@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 #Import db functions
 from database.db import initialize
 from database.binder import get_user_binder, get_user_card, add_card, remove_card, clear_binder
-from database.pulls import get_pull_data, update_pull_count
+from database.pulls import get_pull_data, update_pull_count, add_converted_pull
 
 #Import the functions and cards for the main discord commands
 from gacha.pull import *
@@ -428,15 +428,100 @@ async def check(ctx):
         else:
             await ctx.send(f"You still got a couple pulls ! You have {DAILY_PULL_LIMIT - pull_count} pulls remaining.")
             return
-        
 
-#Check remaining time until next available pulls
+
+#Convert 10 duplicates of a card into a free guaranteed higher tier pull
 @bot.command()
 async def convert(ctx, card_id):
+    """!convert <card_ID> -- Convert 10 duplicates into 1 free pull. Higher tier guaranteed."""
     user_id = ctx.author.id
+
+    # Check if the card exists in cards_id
+    found = False
+    for tier, cards in cards_id.items():
+        if card_id in cards:
+            found = True
+            break
+    if not found:
+        await ctx.send(f"Card ID '{card_id}' couldn't be found.")
+        return
+
     
+    # Check if the user owns that card and has enough duplicates
+    card = get_user_card(user_id, card_id)
+    if not card:
+        await ctx.send("You don't own that card, sorry.")
+        return
+    
+    card_id_db, card_name, card_tier, card_description, quantity = card
+    max_convertible = (quantity // 10) * 10
+    dozen = quantity % 10 = 0
+
+    if max_convertible < 10:
+        await ctx.send(f"You only have {quantity} copies of that card. The minimum to convert should be 10, sorry sexy.")
+        return
+    
+    elif max_convertible >= 20:
+        await ctx.send(f"(Please write your answer) You have {quantity} copies of that card. How many free pulls do you want ? (10 duplicates = 1 free pull)")
+
+        def check_author(m):
+            return m.author == ctx.author and m.channel == ctx.channel
+        
+        try:
+            msg = await bot.wait_for("message", check=check_author, timeout=30.0)
+        except TimeoutError:
+            await ctx.send(f"You took too long to answer, gotta cancel the conversion, sorry")
+            return
+        
+        if msg.content != dozen:
+            await ctx.send("Your answer should be in a range of dozens (10, 20, 30...).")
+        
+        # CONTINUE HERE 
+        # JE SUIS ENTRAIN DE CREER LE SYSTEME DE PROMPT ET MESSAGE
+
     
 
+
+            await prompt.add_reaction("✅")
+            await prompt.add_reaction("❌")
+            
+            def check(reaction, user):
+                return user == ctx.author and str(reaction.emoji) in ["✅", "❌"] and reaction.message.id == prompt.id
+
+            try:
+                reaction, _ = await bot.wait_for("reaction_add", check=check, timeout=30.0)
+            except TimeoutError:
+                await ctx.send("You took too long to decide, conversion cancelled.")
+                return
+            if str(reaction.emoji) == "❌":
+                await ctx.send("Ok fuck off")
+                return
+            
+ 
+
+        
+
+    # Confirmation prompt
+    pulls_gained = amount // 10
+    await ctx.send(f"You are about to convert {amount}x **{card_name}** [{card_tier}] into **{pulls_gained}** free guaranteed **{card_tier}** pull(s) and higher. Please react to this message to confirm, otherwise fuck off")
+    await prompt.add_reaction("✅")
+    await prompt.add_reaction("❌")
+
+    def check(reaction, user):
+        return user == ctx.author and str(reaction.emoji) in ["✅", "❌"] and reaction.message.id == prompt.id
+
+    try:
+        reaction, _ = await bot.wait_for("reaction_add", check=check, timeout=30.0)
+    except TimeoutError:
+        await ctx.send("You took too long to decide, conversion cancelled.")
+        return
+    if str(reaction.emoji) == "❌":
+        await ctx.send("Ok fuck off")
+        return
+
+    remove_card(user_id, card_id, amount)
+    add_converted_pull(user_id, tier, pulls_gained)
+    await ctx.send(f"Successfully converted! You now have {pulls_gained} free pull(s) of tier {card_tier} and higher stored.")
 
 
 

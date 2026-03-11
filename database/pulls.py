@@ -23,3 +23,16 @@ def update_pull_count(user_id, new_count, reset_time):
 """, (str(user_id), new_count, reset_time, new_count, reset_time))
     conn.commit()
     conn.close()
+
+def add_converted_pull(user_id, tier, quantity=1):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO converted_pulls(user_id, pull_tier, quantity)
+        VALUES (?, ?, ?)
+        ON CONFLICT(user_id, pull_tier)
+        DO UPDATE SET quantity = quantity + ?
+    """, (str(user_id), tier, quantity, quantity))
+
+    conn.commit()
+    conn.close()
