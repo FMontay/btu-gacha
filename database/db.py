@@ -34,9 +34,10 @@ def initialize():
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS converted_pulls (
-                   user_id INTEGER PRIMARY KEY,
+                   user_id INTEGER,
                    pull_tier TEXT,
-                   quantity INTEGER DEFAULT 1
+                   quantity INTEGER DEFAULT 1,
+                   PRIMARY KEY (user_id, pull_tier)
         )
     """)
     conn.commit()
