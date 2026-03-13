@@ -70,3 +70,25 @@ def use_free_pulls(user_id, tier, quantity=1):
     conn.commit()
     conn.close()
     return True
+
+
+def clear_free_pulls(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM converted_pulls WHERE user_id = ?", (str(user_id),))
+    conn.commit()
+    conn.close()
+
+
+def add_free_pull(user_id, pull_tier, quantity):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO converted_pulls(user_id, pull_tier, quantity)
+        VALUES (?, ?, ?)
+        ON CONFLICT(user_id, pull_tier)
+        DO UPDATE SET quantity = quantity + ?
+    """, (str(user_id), pull_tier, quantity))
+
+    conn.commit()
+    conn.close()

@@ -63,7 +63,14 @@ async def devhelp(ctx):
         title="List of every available command",
         color=discord.Colour.red()
     )
-    for cmd in bot.commands:
+
+    # Sort alphabetically first, then group by role (admin last)
+    sorted_commands = sorted(bot.commands, key=lambda cmd: (
+        any(getattr(check, "__qualname__", "").startswith("has_role") for check in cmd.checks),
+        cmd.name
+    ))
+
+    for cmd in sorted_commands:
         is_admin = any(getattr(check, "__qualname__", "").startswith("has_role") for check in cmd.checks)
         label = f"!{cmd} 👑" if is_admin else f"!{cmd}"
         embed.add_field(
@@ -83,12 +90,13 @@ async def help(ctx):
         title="List of commands",
         color=discord.Colour.blue()
     )
-    for cmd in bot.commands:
+    sorted_commands = sorted(bot.commands, key=lambda cmd: cmd.name)
+    for cmd in sorted_commands:
         if any(getattr(check, "__qualname__", "").startswith("has_role") for check in cmd.checks):
             continue
         embed.add_field(
             name=f"!{cmd}",
-            value=cmd.help or "I forgor.",
+            value=cmd.help or "You forgot to include a description stupid bitch",
             inline=False
         )
     await ctx.send(embed=embed)
@@ -122,10 +130,6 @@ async def add(ctx, id_card:str, user:discord.Member, amount:int):
     add_card(user_id, id_card, card_info['name'], tier, card_info['info'], amount)
     await ctx.send(f"Successfully added {amount}x '{card_info['name']}' (ID {id_card}).")
 
-    #FOR TESTING PURPOSES
-    if id_card == '01':
-        await ctx.send(f"@everyone {user.mention} RELEASED THE GOBLIN FROM ITS JAIL!!!!")
-
     
 # Delete X user's card.s
 @bot.command()
@@ -143,13 +147,15 @@ async def delete(ctx, id_card:str, user:discord.Member, amount:int):
         await ctx.send(f"No card with ID '{id_card}' found in {user.mention}'s binder.")            
         return
     
+    card_id_db, card_name, card_tier, quantity = matching[0]
+    
     #check if the amount you want to delete is superior to the maximum amount the user has
-    if amount > matching[0][3]:
-        await ctx.send(f"{user.mention} only has {matching[0][3]} cards. Please write a valid number.")
+    if amount > quantity:
+        await ctx.send(f"{user.mention} only has {quantity} cards. Please write a valid number.")
         return
     
     remove_card(user_id, id_card, amount)
-    await ctx.send(f"Successfully deleted {amount} card(s) with ID {id_card} from {user.mention}'s binder.")
+    await ctx.send(f"Successfully deleted {amount}x '{card_name}' (ID {id_card}) from {user.mention}'s binder.")
 
 
 #Empty X user's binder
@@ -172,55 +178,8 @@ async def empty(ctx, user:discord.Member):
 @commands.has_role(secret_role)
 async def devpull(ctx): 
     """!devpull -- Pull a card. No limit. For test pulling and avoid being restrained by limited pull in case of glitch."""  
-
-    #uses the functions and variable imported from gacha.pull & gacha.cards
-    tier, card_id, card = pull_card()
-    user_id = ctx.author.id
-
-    add_card(user_id, card_id, card['name'], tier, card['info'])
-
-    pictures_path = card['image']
-
-    #The pictures are temporarily local. I need to upload them to the web once I want to permanently host the bot. This is just for testing
-    if pictures_path.startswith("http"):
-
-        if tier in ['E']:
-            color=discord.Color.dark_blue()
-        elif tier in ['D']:
-            color=discord.Color.green()
-        elif tier in ['C']:
-            color=discord.Color.orange()
-        elif tier in ['B']:
-            color=discord.Color.blue()
-        elif tier in ['A']:
-            color=discord.Color.red()
-        elif tier in ['S']:
-            color=discord.Color.pink()
-        elif tier in ['SS']:
-            color=discord.Color.purple()
-        elif tier in ['CURSED']:
-            color=discord.Color.light_grey()
-        else:
-            color=discord.Color.gold()
-
-        embed = discord.Embed(
-            title=f"{card['name']} [{tier}]",
-            description=card['info'],
-            color=color
-        )
-        embed.set_image(url=pictures_path)
-        await ctx.send(embed=embed)
-
-        if tier in ['S','SS','CURSED']:
-            await ctx.send(f"Congratulations ! You pulled a very rare card!")
-        elif tier in ['GOBLIN']:
-            await ctx.send(f"@everyone {ctx.author.mention} RELEASED THE GOBLIN FROM ITS JAIL!!!!")
-        else:
-            pass
-        
-
-    else:
-        await ctx.send(f"Error : Image file not found for '{card['name']}'.")
+    
+    await execute_pull(ctx)
 
 
 
@@ -247,6 +206,69 @@ async def reset(ctx, user:discord.Member):
     update_pull_count(user_id, pull_count, last_reset.isoformat())
 
     await ctx.send(f"Daily limit successfully reset for {user.mention} !")
+
+
+# Clears X user's free pulls
+@bot.command()
+@commands.has_role(secret_role)
+async def fpreset(ctx, user:discord.Member): 
+    """!fpreset <@username> -- Reset X user's free pulls"""
+    user_id = user.id
+    rows = check_free_pulls(user_id)
+
+    if not rows:
+        await ctx.send("That user doesn't have any free pull.")
+        return
+    else:
+        clear_free_pulls(user_id)
+        await ctx.send(f"Successfully stole and crushed {user.mention}'s free pulls to dust.")
+
+
+# Check boosted rates
+@bot.command()
+@commands.has_role(secret_role)
+async def rates(ctx, tier:str): 
+    """!rates <tier> -- Shows the boosted pull rates for a given tier."""
+    if tier not in TIER_ORDER:
+        await ctx.send(f"Invalid tier. Valid tiers: {', '.join(TIER_ORDER)}")
+        return
+    
+    if tier == "GOBLIN":
+        await ctx.send("There are no tiers above GOBLIN.")
+        return
+    
+    boosted = new_rates(tier)
+    
+    embed = discord.Embed(
+        title=f"Boosted rates for tier {tier}+",
+        color=discord.Color.gold()
+    )
+    for t, rate in boosted.items():
+        embed.add_field(
+            name=f"{t}",
+            value=f"{rate * 100:.2f}%",
+            inline=False
+        )
+    await ctx.send(embed=embed)
+
+
+# Add X amount of free pulls of chosen tier to user
+@bot.command()
+@commands.has_role(secret_role)
+async def fpadd(ctx, tier:str, user:discord.Member, amount:int): 
+    """!fpadd <tier> <@username> <amount> -- Add X user Y amount of free pulls of Z tier"""
+    user_id = user.id
+
+    if tier not in TIER_ORDER:
+        await ctx.send(f"Tier '{tier}' couldn't be found. Valid tiers: {', '.join(TIER_ORDER)}")
+        return
+
+    if tier == "GOBLIN":
+        await ctx.send("You can't add GOBLIN tier free pulls — there are no tiers above it.")
+        return
+
+    add_free_pull(user_id, tier, amount)
+    await ctx.send(f"Successfully added {amount}x {tier}-tier free pull(s) to {user.mention}.")
 
 
 #Normal commands
@@ -280,15 +302,158 @@ async def pull(ctx):
         time_remaining = (last_reset + timedelta(hours=24)) - now
         hours, remainder = divmod(int(time_remaining.total_seconds()), 3600)
         minutes = remainder // 60
-        await ctx.send(f"Sorry sexy, you've reached your daily pull limit. Come back in {hours}h {minutes} minutes.")
+        await ctx.send(f"Sorry sexy, you've reached your daily pull limit. Come back in {hours}h{minutes} minutes.")
         return
     
     # Increment and save before pulling
     update_pull_count(user_id, pull_count + 1, last_reset.isoformat())
 
+    #pull
+    await execute_pull(ctx)
 
+
+async def prompt_single_pull(ctx, bot, tier, user_id):
+    """Reaction yes/no prompt for using 1 free pull."""
+    prompt = await ctx.send(f"Do you wish to use your 1 free tier {tier}+ pull?")
+    await prompt.add_reaction("✅")
+    await prompt.add_reaction("❌")
+
+    def check(reaction, user):
+        return user == ctx.author and str(reaction.emoji) in ["✅", "❌"] and reaction.message.id == prompt.id
+
+    try:
+        reaction, _ = await bot.wait_for("reaction_add", check=check, timeout=30.0)
+    except TimeoutError:
+        await prompt.delete()
+        await ctx.send("You took too long. (cancelled)")
+        return False
+
+    await prompt.delete()
+    if str(reaction.emoji) == "❌":
+        await ctx.send("Ok fuck off")
+        return False
+    return True
+
+
+async def prompt_multi_pull(ctx, bot, tier, quantity, user_id):
+    """Text prompt for choosing how many free pulls to use."""
+    prompt = await ctx.send(f"You have {quantity} available tier {tier}+ pulls. How many do you wanna use?")
+
+    def check(m):
+        return m.author == ctx.author and m.channel == ctx.channel
+
+    try:
+        msg = await bot.wait_for("message", check=check, timeout=30.0)
+    except TimeoutError:
+        await prompt.delete()
+        await ctx.send("You took too long. (cancelled)")
+        return None
+
+    await prompt.delete()
+    try:
+        amount = int(msg.content)
+    except ValueError:
+        await ctx.send("You gotta write a number dumbass. (cancelled)")
+        return None
+
+    if amount < 1 or amount > quantity:
+        await ctx.send(f"Please write a number between 1 and {quantity}. (cancelled)")
+        return None
+
+    return amount
+
+#Use a free pull based on tier
+@bot.command()
+async def fpull(ctx):
+    """!fpull -- Use your collected free pulls. Guaranteed higher tier."""
+    user_id = ctx.author.id
+    rows = check_free_pulls(user_id)
+    rows = sorted(rows, key=lambda r: TIER_ORDER.index(r[0]))
+
+    #If user has any pull
+    if not rows:
+        await ctx.send(f"You don't have any free pulls.")
+        return
+    
+    # --- Tier selection (only if user has multiple tier types) ---
+    if len(rows) > 1:
+        prompt = await ctx.send("Which free pull tier would you like to use?")
+        valid_emojis = []
+        for (pull_tier, _) in rows:
+            emoji = TIER_REACTION[pull_tier]
+            await prompt.add_reaction(emoji)
+            valid_emojis.append(emoji)
+        await prompt.add_reaction("❌")
+
+        def check_tier(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in valid_emojis + ["❌"] and reaction.message.id == prompt.id
+
+        try:
+            reaction, _ = await bot.wait_for("reaction_add", check=check_tier, timeout=30.0)
+        except TimeoutError:
+            await prompt.delete()
+            await ctx.send("You took too long. (cancelled)")
+            return
+
+        await prompt.delete()
+        if str(reaction.emoji) == "❌":
+            await ctx.send("Ok fuck off")
+            return
+
+        # Match chosen emoji back to a tier
+        chosen_tier = next(t for (t, _) in rows if TIER_REACTION[t] == str(reaction.emoji))
+        quantity = next(q for (t, q) in rows if t == chosen_tier)
+    else:
+        chosen_tier, quantity = rows[0]
+
+
+    # --- Amount selection ---
+    if quantity > 1:
+        amount = await prompt_multi_pull(ctx, bot, chosen_tier, quantity, user_id)
+        if amount is None:
+            return
+    else:
+        confirmed = await prompt_single_pull(ctx, bot, chosen_tier, user_id)
+        if not confirmed:
+            return
+        amount = 1
+
+
+    # --- Execute pulls ---
+    rates = new_rates(chosen_tier)
+    use_free_pulls(user_id, chosen_tier, amount)
+
+    if amount == 1:
+        await execute_pull(ctx, rates=rates)
+        await ctx.send(f"Successfully used 1 free tier {chosen_tier}+ pull!")
+    else:
+        results = []
+        for _ in range(amount):
+            tier, card_id, card = pull_card(rates)
+            add_card(user_id, card_id, card['name'], tier, card['info'])
+            results.append((card_id, card['name'], tier))
+
+        embed = discord.Embed(title=f"Free Pull Results — {amount}x Tier {chosen_tier}+")
+        for (card_id, card_name, card_tier) in results:
+            embed.add_field(name=f"{card_name} [{card_tier}]", value=f"ID: {card_id}", inline=False)
+        await ctx.send(embed=embed)
+
+        rare_pulls = [r for r in results if r[2] in ['S', 'SS', 'CURSED']]
+        goblin_pulls = [r for r in results if r[2] == 'GOBLIN']
+        if goblin_pulls:
+            await ctx.send(f"@everyone {ctx.author.mention} RELEASED THE GOBLIN FROM ITS JAIL!!!!")
+        elif rare_pulls:
+            await ctx.send("Congratulations! You pulled at least one very rare card!")
+
+        await ctx.send(f"Successfully used {amount}x free tier {chosen_tier}+ pulls!")
+
+
+
+# Classic pull execution with pictures   
+async def execute_pull(ctx, rates=None):
+    user_id = ctx.author.id
     #uses the functions and variable imported from gacha.pull & gacha.cards
-    tier, card_id, card = pull_card()
+    tier, card_id, card = pull_card(rates)
     
     add_card(user_id, card_id, card['name'], tier, card['info'])
 
@@ -331,7 +496,6 @@ async def pull(ctx):
         else:
             pass
 
-
     else:
         await ctx.send(f"Error : Image file not found for '{card['name']}' :(")
 
@@ -360,7 +524,7 @@ async def binder(ctx):
         )
 
     await ctx.send(embed=embed)
-
+    
 
 
 #Check specific card info
@@ -498,7 +662,12 @@ async def convert(ctx, card_id):
         pulls_gained = amount//10
         
         #if no error and answer is 20 or more, proceed
-        remove_card(user_id, card_id, amount)
+        try:
+            remove_card(user_id, card_id, amount)
+        except Exception as e:
+            await ctx.send(e)
+            return
+        
         add_converted_pull(user_id, tier, pulls_gained)
         await ctx.send(f"Successfully converted {msg.content} copies of {card_name} into {pulls_gained}x free pulls of tier {card_tier} and higher !")
 
@@ -513,15 +682,22 @@ async def convert(ctx, card_id):
         try:
             reaction, _ = await bot.wait_for("reaction_add", check=check_author, timeout=30.0)
         except TimeoutError:
+            await prompt.delete()
             await ctx.send(f"You took too long to answer, gotta cancel the conversion, sorry")
             return
         
         if str(reaction.emoji) == "❌":
+            await prompt.delete()
             await ctx.send("Ok fuck off")
             return
 
         #if no error, proceed
-        remove_card(user_id, card_id, 10)
+        await prompt.delete()
+        try:
+            remove_card(user_id, card_id, 10)
+        except Exception as e:
+            await ctx.send(e)
+            return
         add_converted_pull(user_id, tier, 1)
         await ctx.send(f"Successfully converted 10 copies of {card_name} into 1 free pull of tier {card_tier} and higher !")
 
@@ -532,6 +708,7 @@ async def fpcheck(ctx):
     """!fpcheck -- Check the amount of free pulls you have."""
     user_id = ctx.author.id
     rows = check_free_pulls(user_id)
+    rows = sorted(rows, key=lambda row: TIER_ORDER.index(row[0]), reverse=True)
 
     if not rows:
         await ctx.send("You don't have any free pulls.")
@@ -552,8 +729,3 @@ async def fpcheck(ctx):
 
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG) #debug and info added to 'discord.log'
-
-
-# delete message prompt after validation (not answer)
-# add error prevention before card removal
-# need to order fpcheck by tiers
