@@ -252,7 +252,7 @@ async def rates(ctx, tier:str):
     await ctx.send(embed=embed)
 
 
-# Add X amount of free pulls of chosen tier to user
+# Add X amount of free pulls of chosen tier to user - HAS ERRORS
 @bot.command()
 @commands.has_role(secret_role)
 async def fpadd(ctx, tier:str, user:discord.Member, amount:int): 
