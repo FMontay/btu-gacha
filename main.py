@@ -23,7 +23,7 @@ load_dotenv()
 
 # FAAANYYYYYYYYYYY CHANGE EN DISCORD_TOKEN_PROD AVANT DE PUSH SUR GITHUBBBBBBBBB HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 #token = os.getenv('DISCORD_TOKEN_DEV')
-token = os.getenv('DISCORD_TOKEN_PROD')
+token = os.getenv('DISCORD_TOKEN')
 
 #Create log folder if it doesn't already exist and set up log file name
 os.makedirs('logs', exist_ok=True)
