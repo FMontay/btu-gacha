@@ -3,20 +3,11 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-# load_dotenv()
-
-# def get_connection_turso():
-    # url = os.getenv("TURSO_DATABASE_URL")
-    # token = os.getenv("TURSO_AUTH_TOKEN")
-    # conn = libsql.connect("btu_gacha.db", sync_url=url, auth_token=token)
-    # conn.sync()
-    # return conn
-
 ROOT_DIR = Path(__file__).parent.parent
-DB_PATH = ROOT_DIR / "btu_gacha.db"
+DB_PATH = os.getenv("DB_PATH", "btu_gacha.db") 
 
 def get_connection():
-    return sqlite3.connect(str(DB_PATH))
+    return sqlite3.connect(DB_PATH)
 
 def initialize():
     conn = get_connection()

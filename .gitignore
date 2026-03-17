@@ -1,6 +1,6 @@
 *.log
 .env
 *.sql
-btu-gacha\btuvenv
+btuvenv/
 __pycache__
 btu_gacha.db
