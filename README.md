@@ -1,47 +1,83 @@
-﻿### **BTU Gacha (BlackTower Universe Gacha)**
+﻿# BTU Gacha — BlackTower Universe Gacha Bot
 
-BTU Gacha is a private Discord gacha bot where the user can "pull" (gamble) for collectible arts of my boyfriend's story characters. This is solely for entertainment and learning purposes, with no intention of marketing whatsoever. 
+**BTU Gacha** is a private Discord gacha bot where users can pull for collectible character cards from my boyfriend's original story universe, *Blacktower Universe (BTU)*. This project is solely for entertainment and learning purposes, with no intention of marketing whatsoever.
 
-With BTU Gacha, you can:
-- pull for characters (limited to 5 per day)
-- check your collection of characters with an integrated binder
-- get information on the character cards you obtained
-- trade your cards with other users
-- use items to get additional pulls & other features
+---
 
-#### Commands:
+## ✨ What can you do ?
 
-**!help** -> lists out all the available commands
+- 🎴 **Pull** for character cards at random — limited to **3 pulls per day**
+- 📖 **Browse your binder** to check your collection
+- 🔍 **Inspect cards** you've obtained for lore and details
+- 🔄 **Convert duplicates** into free guaranteed higher-tier pulls
+- 🎟️ **Use free pulls** stored from converted duplicates
 
-**!pull** -> Pulls a character at random. Limited to 5 per day (except for free adfitional pulls).
+---
 
-**!binder** -> Opens up the binder/collection list of the collected characters.
+## 📋 Commands
 
-**!info <ID_Card>** -> Get more information on character cards (ID obtainable after checking in binder).
+| Command | Description |
+|---|---|
+| `!help` | Lists all available commands |
+| `!pull` | Pull a random character card (limited to 3/day) |
+| `!binder` | Open your card collection |
+| `!info <card_id>` | Get detailed info on a card you own |
+| `!check` | Check your remaining daily pulls and reset timer |
+| `!convert <card_id>` | Convert 10 duplicates into 1 free higher-tier pull |
+| `!fpull` | Use a stored free pull |
+| `!fpcheck` | Check your available free pulls |
 
-**!inventory** -> Opens up inventory to check on items.
+> 💡 Card IDs are visible in your `!binder`.
 
-**!use <item_name>** -> Use X item from the inventory.
+---
 
+## 🔒 Admin Commands
 
-#### Available items:
+A set of commands is reserved for users with the **God** role for bot control and debugging purposes. These include managing user binders, resetting daily limits, and adding free pulls manually. Use `!devhelp` to see the full list if you have the role.
 
-- **pity-pull** -> Additional pull obtained after 10 duplicates. Can be used after reaching daily limit. Higher chance of getting higher rarity cards, based on the duplicates' rarity.
+---
 
-Example: "John obtained 11 duplicates of a D Tier character. 10 of those cards may be turned into a pity-pull, which guarantees John much higher chances of pulling for a C Tier & higher character, while the chances of pulling for a D Tier & lower are much lower."
+## 🎟️ Free Pull System
 
+When you accumulate **10 duplicates** of the same card, you can convert them into a **free pull** that doesn't count toward your daily limit — and guarantees a card of a **higher tier** than the one converted.
 
-#### Rarities:
+**How it works:**
+- `!convert <card_id>` — converts 10 duplicates into 1 stored free pull
+- The free pull's minimum guaranteed tier is based on the converted card's tier
+- You can convert multiples of 10 at once (20 duplicates = 2 free pulls, etc.)
+- Free pulls are stored and can be used anytime with `!fpull`
 
-**E, D, C, B, A, S, SS, ???, ???** [The last two ranks are the rarest, but also secret.]
+> *Example: Converting 10 copies of a **D tier** card guarantees your free pull will land on **C tier or higher**. The rarer the converted card, the better the boosted rates.*
 
-E having the most common/weakest characters, and SS having rarer/stronger characters. "???" are different. You'll see, if you're lucky enough haha
+---
 
-The higher rarities may contain alternative arts of lower rarities.
+## 🌟 Tiers & Rarities
 
+Cards are ranked across **9 tiers**, from most common to rarest:
 
-#### Future additional gimics:
+| Tier | Rarity | Pull Rate |
+|---|---|---|
+| **E** | Common | ~39.89% |
+| **D** | Uncommon | ~25% |
+| **C** | Rare | ~15% |
+| **B** | Epic | ~10% |
+| **A** | Super Epic | ~6% |
+| **S** | Legendary | ~3% |
+| **SS** | Mythic | ~1% |
+| **???** | *(Secret)* | 🤫 |
+| **???** | *(Secret)* | 🤫 |
 
-- Knowledge quiz on the books and the characters
+> The last two tiers are secret. You'll know them when you see them — if you're lucky enough. 👀
 
+Higher rarities may contain **alternative arts** of lower rarity characters.
 
+---
+
+## 🔮 Upcoming Features
+
+- 🧠 **Knowledge quiz** on the books and characters
+- 🤝 **Trading system** between users
+
+---
+
+*BTU Gacha is a passion project. All characters and artwork belong to their original creator.*
