@@ -20,7 +20,10 @@ initialize()
 
 #Starting up Discord Bot
 load_dotenv()
-token = os.getenv('DISCORD_TOKEN')
+
+# FAAANYYYYYYYYYYY CHANGE EN DISCORD_TOKEN_PROD AVANT DE PUSH SUR GITHUBBBBBBBBB HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+#token = os.getenv('DISCORD_TOKEN_DEV')
+token = os.getenv('DISCORD_TOKEN_PROD')
 
 #Create log folder if it doesn't already exist and set up log file name
 os.makedirs('logs', exist_ok=True)
@@ -267,7 +270,7 @@ async def fpadd(ctx, tier:str, user:discord.Member, amount:int):
         await ctx.send("You can't add GOBLIN tier free pulls — there are no tiers above it.")
         return
 
-    add_free_pull(user_id, tier, amount)
+    add_converted_pull(user_id, tier, amount)
     await ctx.send(f"Successfully added {amount}x {tier}-tier free pull(s) to {user.mention}.")
 
 
