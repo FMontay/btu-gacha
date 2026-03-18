@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 #ROOT_DIR = Path(__file__).parent.parent
-DB_PATH = os.getenv("DB_PATH", "btu_gacha.db") 
+DB_PATH = os.getenv("DB_PATH", "btu_gacha.db")
 
 def get_connection():
     return sqlite3.connect(DB_PATH)

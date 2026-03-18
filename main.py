@@ -15,11 +15,11 @@ from database.pulls import *
 from gacha.pull import *
 from gacha.cards import cards_id
 
-initialize()
-
-
 #Starting up Discord Bot
 load_dotenv()
+
+initialize()
+
 
 # FAAANYYYYYYYYYYY CHANGE EN DISCORD_TOKEN_PROD AVANT DE PUSH SUR GITHUBBBBBBBBB HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 #token = os.getenv('DISCORD_TOKEN_DEV')
@@ -84,6 +84,16 @@ async def devhelp(ctx):
     await ctx.send(embed=embed)
 
 
+
+#Get db backup
+@bot.command()
+@commands.has_role(secret_role)
+async def backup(ctx):
+    """!backup -- Get db backup as a discord file attachment"""
+    import os
+    db_path = os.getenv("DB_PATH", "btu_gacha.db")
+    file = discord.File(db_path, filename="btu_gacha_backup.db")
+    await ctx.send("Here's the current database backup:", file=file)
 
 #Check for available commands (no admin commands)
 @bot.command()
