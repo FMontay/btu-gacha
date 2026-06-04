@@ -75,8 +75,8 @@ Higher rarities may contain **alternative arts** of lower rarity characters.
 
 ## Upcoming Features (?)
 
- **Knowledge quiz** on the books and characters
- **Trading system** between users
+ - **Knowledge quiz** on the books and characters
+ - **Trading system** between users
 
 ---
 
