@@ -1,20 +1,20 @@
 ﻿# BTU Gacha — BlackTower Universe Gacha Bot
 
-**BTU Gacha** is a private Discord gacha bot where users can pull for collectible character cards from my boyfriend's original story universe, *Blacktower Universe (BTU)*. This project is solely for entertainment and learning purposes, with no intention of marketing whatsoever.
+**BTU Gacha** is a private Discord gacha bot where users can pull for collectible character cards from a friend's original story universe, *Blacktower Universe (BTU)*. This project is solely for entertainment and learning purposes, with no intention of marketing whatsoever.
 
 ---
 
-## ✨ What can you do ?
+## What can you do ?
 
-- 🎴 **Pull** for character cards at random — limited to **3 pulls per day**
-- 📖 **Browse your binder** to check your collection
-- 🔍 **Inspect cards** you've obtained for lore and details
-- 🔄 **Convert duplicates** into free guaranteed higher-tier pulls
-- 🎟️ **Use free pulls** stored from converted duplicates
+- **Pull** for character cards at random — limited to **3 pulls per day**
+- **Browse your binder** to check your collection
+- **Inspect cards** you've obtained for lore and details
+- **Convert duplicates** into free guaranteed higher-tier pulls
+- **Use free pulls** stored from converted duplicates
 
 ---
 
-## 📋 Commands
+## Commands
 
 | Command | Description |
 |---|---|
@@ -27,17 +27,17 @@
 | `!fpull` | Use a stored free pull |
 | `!fpcheck` | Check your available free pulls |
 
-> 💡 Card IDs are visible in your `!binder`.
+> Card IDs are visible in your `!binder`.
 
 ---
 
-## 🔒 Admin Commands
+## Admin Commands
 
 A set of commands is reserved for users with the **God** role for bot control and debugging purposes. These include managing user binders, resetting daily limits, and adding free pulls manually. Use `!devhelp` to see the full list if you have the role.
 
 ---
 
-## 🎟️ Free Pull System
+## Free Pull System
 
 When you accumulate **10 duplicates** of the same card, you can convert them into a **free pull** that doesn't count toward your daily limit — and guarantees a card of a **higher tier** than the one converted.
 
@@ -51,7 +51,7 @@ When you accumulate **10 duplicates** of the same card, you can convert them int
 
 ---
 
-## 🌟 Tiers & Rarities
+## Tiers & Rarities
 
 Cards are ranked across **9 tiers**, from most common to rarest:
 
@@ -64,19 +64,19 @@ Cards are ranked across **9 tiers**, from most common to rarest:
 | **A** | Super Epic | ~6% |
 | **S** | Legendary | ~3% |
 | **SS** | Mythic | ~1% |
-| **???** | *(Secret)* | 🤫 |
-| **???** | *(Secret)* | 🤫 |
+| **???** | *(Secret)* | ??? |
+| **???** | *(Secret)* | ??? |
 
-> The last two tiers are secret. You'll know them when you see them — if you're lucky enough. 👀
+> The last two tiers are secret. You'll know them when you see them.
 
 Higher rarities may contain **alternative arts** of lower rarity characters.
 
 ---
 
-## 🔮 Upcoming Features
+## Upcoming Features (?)
 
-- 🧠 **Knowledge quiz** on the books and characters
-- 🤝 **Trading system** between users
+ **Knowledge quiz** on the books and characters
+ **Trading system** between users
 
 ---
 
